@@ -1,15 +1,20 @@
 import tweepy
 import requests
+from dotenv import load_dotenv
+import os
+
+# Cargar las variables de entorno desde el archivo .env
+load_dotenv()
 
 # Credenciales para X (Twitter) API
-BEARER_TOKEN = 'AAAAAAAAAAAAAAAAAAAAALALwgEAAAAAcQAPiu1irGxWidwavOlzthiT30Y%3Ds2TyQqdyAD0QXBxm45Xt9jYml5WJ1U6mQZJkGMceSXvJugHYt1'
-CONSUMER_KEY = 'ccJT2d7NohWjXC3xLA9Q4aTQF'
-CONSUMER_SECRET = 'cZF7CnKyXWYbBKRaT9t1flNUTqZewDUuOAxMCSBGZY0qdPrXS9'
-ACCESS_TOKEN = '2546963438-m71UY1El0IV5FW6FFbfUrDG54CcF7I0eu6Druwa'
-ACCESS_SECRET = 'LM3eO3xyTKfNT0S9lLNYR86IbzDUKymYhF6kctHUwRkQ3'
+BEARER_TOKEN = os.getenv('BEARER_TOKEN')
+CONSUMER_KEY = os.getenv('CONSUMER_KEY')
+CONSUMER_SECRET = os.getenv('CONSUMER_SECRET')
+ACCESS_TOKEN = os.getenv('ACCESS_TOKEN')
+ACCESS_SECRET = os.getenv('ACCESS_SECRET')
 
 # Credenciales para Mediastack
-MEDIASTACK_API_KEY = '25557c19616062212625b9e9bb67083c'
+MEDIASTACK_API_KEY = os.getenv('MEDIASTACK_API_KEY')
 
 # Configuración del cliente Tweepy para la API de X
 twitter_client = tweepy.Client(
