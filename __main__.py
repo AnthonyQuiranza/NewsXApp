@@ -1,12 +1,12 @@
 import tweepy
 import requests
-from dotenv import load_dotenv
 import os
 
-# Cargar las variables de entorno desde el archivo .env
+# Cargar las credenciales desde el archivo .env
+from dotenv import load_dotenv
 load_dotenv()
 
-# Credenciales para X (Twitter) API
+# Credenciales de la API de Twitter (X.com)
 BEARER_TOKEN = os.getenv('BEARER_TOKEN')
 CONSUMER_KEY = os.getenv('CONSUMER_KEY')
 CONSUMER_SECRET = os.getenv('CONSUMER_SECRET')
@@ -16,7 +16,7 @@ ACCESS_SECRET = os.getenv('ACCESS_SECRET')
 # Credenciales para Mediastack
 MEDIASTACK_API_KEY = os.getenv('MEDIASTACK_API_KEY')
 
-# Configuración del cliente Tweepy para la API de X
+# Configuración del cliente Tweepy para la API de X.com
 twitter_client = tweepy.Client(
     bearer_token=BEARER_TOKEN,
     consumer_key=CONSUMER_KEY,
@@ -32,7 +32,7 @@ def obtener_noticias_tecnologia():
     
     if response.status_code == 200:
         noticias = response.json()
-        return noticias['data']  # Retorna las noticias
+        return noticias['data']  # Retorna la lista de noticias
     else:
         print(f"Error al obtener noticias: {response.status_code}")
         return []
@@ -42,39 +42,59 @@ def generar_resumen(noticia):
     resumen = noticia['description']
     if resumen:
         if len(resumen) > 200:
-            resumen = resumen[:197] + "..."  # Limita el resumen a 200 caracteres
+            resumen = resumen[:197] + "..."  # Limitar el resumen a 200 caracteres
     else:
-        resumen = noticia['title']  # Si no hay descripción, usar el título como resumen
+        resumen = noticia['title']  # Si no hay descripción, usar el título
     return resumen
 
 # Función para publicar un tweet en X.com
 def post_tweet(mensaje):
     try:
-        # Publicar el tweet
+        # Intentar publicar el tweet
         response = twitter_client.create_tweet(text=mensaje)
         tweet_id = response.data['id']
         print(f"Tweet publicado correctamente con ID: {tweet_id}")
         return tweet_id
     except tweepy.TweepyException as e:
-        print(f"Error al publicar el tweet: {e.response.text}")
-        return None
+        error_response = e.response.json()
+        # Verificar si es un error de contenido duplicado
+        if error_response.get('status') == 403 and "duplicate content" in error_response.get('detail', '').lower():
+            print(f"Tweet duplicado: {error_response.get('detail')}")
+            return "duplicate"
+        else:
+            print(f"Error al publicar el tweet: {error_response.get('detail')}")
+            return "error"
 
-# Publicar las noticias más recientes en Twitter con un resumen
+# Función principal para publicar noticias en Twitter
 def publicar_noticias_en_twitter():
     noticias = obtener_noticias_tecnologia()
     
     if noticias:
-        for noticia in noticias[:5]:  # Publicar solo las primeras 5 noticias
+        for noticia in noticias:  # Iterar sobre todas las noticias
             titulo = noticia['title']
             url = noticia['url']
             resumen = generar_resumen(noticia)
-            mensaje = f"{resumen} {url}"  # Crea el mensaje para el tweet
-            if len(mensaje) > 280:
-                mensaje = mensaje[:277] + "..."  # Asegurarse que el tweet no supere los 280 caracteres
-            post_tweet(mensaje)
-    else:
-        print("No se encontraron noticias para publicar")
+            mensaje = f"{resumen} {url}"  # Crear el mensaje del tweet
 
-# Ejecutar la publicación de noticias en X.com
+            # Asegurarse de que el tweet no supere los 280 caracteres
+            if len(mensaje) > 280:
+                mensaje = mensaje[:277] + "..."
+
+            resultado = post_tweet(mensaje)
+
+            # Si el tweet es duplicado, continuar con la siguiente noticia
+            if resultado == "duplicate":
+                print("Intentando con la siguiente noticia...")
+                continue
+            elif resultado == "error":
+                print("Se produjo un error al publicar.")
+                break
+            else:
+                print("Tweet publicado correctamente.")
+                break  # Detenerse después de publicar correctamente una noticia
+    else:
+        print("No se encontraron noticias para publicar.")
+
+# Ejecutar la publicación de noticias en Twitter
 if __name__ == "__main__":
     publicar_noticias_en_twitter()
